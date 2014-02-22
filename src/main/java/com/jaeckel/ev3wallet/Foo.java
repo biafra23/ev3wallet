@@ -1,48 +1,42 @@
 package com.jaeckel.ev3wallet;
 
-import java.io.BufferedReader;
+import com.google.bitcoin.core.Address;
+import com.google.bitcoin.core.Block;
+import com.google.bitcoin.core.BlockChain;
+import com.google.bitcoin.core.CheckpointManager;
+import com.google.bitcoin.core.ECKey;
+import com.google.bitcoin.core.GetDataMessage;
+import com.google.bitcoin.core.Message;
+import com.google.bitcoin.core.Peer;
+import com.google.bitcoin.core.PeerEventListener;
+import com.google.bitcoin.core.PeerGroup;
+import com.google.bitcoin.core.Transaction;
+import com.google.bitcoin.core.TransactionInput;
+import com.google.bitcoin.core.TransactionOutput;
+import com.google.bitcoin.core.Wallet;
+import com.google.bitcoin.net.discovery.DnsDiscovery;
+import com.google.bitcoin.net.discovery.PeerDiscovery;
+import com.google.bitcoin.params.MainNetParams;
+import com.google.bitcoin.script.Script;
+import com.google.bitcoin.store.BlockStoreException;
+import com.google.bitcoin.store.SPVBlockStore;
+import com.google.bitcoin.store.UnreadableWalletException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-
-
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-
-import java.security.spec.ECField;
-import java.security.spec.ECPoint;
-import java.text.MessageFormat;
-import java.util.LinkedList;
+import java.util.InputMismatchException;
 import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.h2.security.BlockCipher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.bitcoin.core.*;
-import com.google.bitcoin.net.AbstractTimeoutHandler;
-import com.google.bitcoin.net.discovery.DnsDiscovery;
-import com.google.bitcoin.net.discovery.PeerDiscovery;
-import com.google.bitcoin.script.Script;
-import com.google.bitcoin.core.Transaction;
-import com.google.bitcoin.core.TransactionInput;
-import com.google.bitcoin.core.TransactionOutput;
-import com.google.bitcoin.core.Wallet;
-import com.google.bitcoin.params.MainNetParams;
-import com.google.bitcoin.store.BlockStore;
-import com.google.bitcoin.store.BlockStoreException;
-import com.google.bitcoin.store.SPVBlockStore;
-import com.google.bitcoin.store.UnreadableWalletException;
+import javax.annotation.Resource;
 
 import lejos.hardware.Button;
 import lejos.hardware.lcd.LCD;
@@ -67,17 +61,20 @@ public class Foo implements Runnable {
     }
 
     public void run() {
+        slf4jLogger.info("run()");
+
         MainNetParams netParams = new MainNetParams();
         Wallet wallet = get_wallet(netParams);
-        File blockStoreFile = new File("ev3_spv_block_store");
+        File blockStoreFile = new File("/home/root/ev3_spv_block_store");
         long offset = 0; // 86400 * 30;
         try {
             SPVBlockStore blockStore = new SPVBlockStore(netParams,
                                                          blockStoreFile);
-            File checkpointsFile = new File("checkpoints");
-            FileInputStream stream = new FileInputStream(checkpointsFile);
+            slf4jLogger.info("SPVBlockStore instantiated");
+
+            InputStream stream = getClass().getClassLoader().getResourceAsStream("checkpoints");
             CheckpointManager.checkpoint(netParams, stream, blockStore,
-                                         wallet.getEarliestKeyCreationTime() - offset);
+                    wallet.getEarliestKeyCreationTime() - offset);
 
             BlockChain blockChain = new BlockChain(netParams, wallet,
                                                    blockStore);
@@ -96,23 +93,21 @@ public class Foo implements Runnable {
             peerGroup.addEventListener(listener);
         }
         catch (BlockStoreException e) {
-            System.err.println("Caught BlockStoreException: " + e.getMessage());
+            slf4jLogger.error("Caught BlockStoreException: ", e);
         }
         catch (UnknownHostException x) {
-            System.err.println("Caught UnknownHostException: " +
-                               x.getMessage());
+            slf4jLogger.error("Caught UnknownHostException: ", x);
         }
         catch (FileNotFoundException c) {
-            System.err.println("Caught BlockStoreException: " + c.getMessage());
+            slf4jLogger.error("Caught BlockStoreException: ", c);
         }
         catch (IOException ie) {
-            System.err.println("Caught BlockStoreException: " +
-                               ie.getMessage());
+            slf4jLogger.error("Caught BlockStoreException: ", ie);
         }
     }
 
     public static Wallet get_wallet(MainNetParams netParams) {
-        File walletFile = new File("ev3_spv_wallet_file");
+        File walletFile = new File("/home/root/ev3_spv_wallet_file");
         Wallet wallet;
         try {
             wallet = Wallet.loadFromFile(walletFile);
@@ -124,7 +119,7 @@ public class Foo implements Runnable {
                 wallet.saveToFile(walletFile);
             }
             catch (IOException a) {
-                System.err.println("Caught IOException: " + a.getMessage());
+                slf4jLogger.error("Caught IOException: ", a);
             }
         }
         return wallet;
