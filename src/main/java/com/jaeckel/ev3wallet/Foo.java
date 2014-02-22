@@ -38,13 +38,32 @@ import com.google.bitcoin.store.BlockStoreException;
 import com.google.bitcoin.store.SPVBlockStore;
 import com.google.bitcoin.store.UnreadableWalletException;
 
-public class Foo {
+import lejos.hardware.Button;
+import lejos.hardware.lcd.LCD;
+
+public class Foo implements Runnable {
     public static final Logger slf4jLogger = LoggerFactory.getLogger(Foo.class);
     public static void main(String[] args) {
-        run();
+
+        slf4jLogger.info("main()");
+
+        LCD.clear();
+        LCD.drawString("EV3 Wallet", 4, 3);
+
+
+        new Thread(new Foo()).start();
+
+        Button.waitForAnyPress();
+        LCD.clear();
+        LCD.refresh();
+
+        System.exit(1);
     }
 
-    public static void run() {
+    public  void run() {
+
+        slf4jLogger.info("run()");
+
         MainNetParams netParams = new MainNetParams();
         Wallet wallet = get_wallet(netParams);
         File blockStoreFile = new File("ev3_spv_block_store");

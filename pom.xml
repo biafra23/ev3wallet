@@ -33,11 +33,7 @@
       <groupId>org.lejos</groupId>
       <artifactId>ev3classes</artifactId>
       <version>0.6.0-alpha</version>
-    </dependency>
-    <dependency>
-      <groupId>org.lejos</groupId>
-      <artifactId>dbusjava</artifactId>
-      <version>0.6.0-alpha</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
   <build>
@@ -58,23 +54,32 @@
               <archive>
                 <manifest>
                   <mainClass>com.jaeckel.ev3wallet.Foo</mainClass>
+                  <!--<addClasspath>true</addClasspath>-->
+                  <!--<classpathPrefix>lib/</classpathPrefix>-->
                 </manifest>
+                  <manifestEntries>
+                      <!--<Class-Path>lejos/lib/ev3classes.jar lejos/lib/dbusjava.jar lejos/libjna/usr/share/java/jna-3.2.7.jar</Class-Path>-->
+                      <Class-Path>/home/root/lejos/lib/ev3classes.jar /home/root/lejos/lib/dbusjava.jar /home/root/lejos/libjna/usr/share/java/jna-3.2.7.jar</Class-Path>
+                  </manifestEntries>
               </archive>
             </configuration>
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifest>
-              <mainClass>com.jaeckel.ev3wallet.Foo</mainClass>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
+      <!--<plugin>-->
+        <!--<groupId>org.apache.maven.plugins</groupId>-->
+        <!--<artifactId>maven-jar-plugin</artifactId>-->
+        <!--<configuration>-->
+          <!--<archive>-->
+            <!--<manifest>-->
+              <!--<mainClass>com.jaeckel.ev3wallet.Foo</mainClass>-->
+                <!--<addClasspath>true</addClasspath>-->
+                <!--<classpathPrefix>lib/</classpathPrefix>-->
+
+            <!--</manifest>-->
+          <!--</archive>-->
+        <!--</configuration>-->
+      <!--</plugin>-->
     </plugins>
   </build>
   <repositories>
