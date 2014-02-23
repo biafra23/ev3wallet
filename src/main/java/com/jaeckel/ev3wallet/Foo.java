@@ -21,27 +21,33 @@ import com.google.bitcoin.script.Script;
 import com.google.bitcoin.store.BlockStoreException;
 import com.google.bitcoin.store.SPVBlockStore;
 import com.google.bitcoin.store.UnreadableWalletException;
+import com.google.bitcoin.uri.BitcoinURI;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.InputMismatchException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import javax.annotation.Resource;
 
 import lejos.hardware.Button;
 import lejos.hardware.lcd.LCD;
 
+
 public class Foo implements Runnable {
+
+    private final static QRCodeWriter QR_WRITER = new QRCodeWriter();
+
     public static final Logger slf4jLogger = LoggerFactory.getLogger(Foo.class);
     public static void main(String[] args) {
 
@@ -49,7 +55,6 @@ public class Foo implements Runnable {
 
         LCD.clear();
         LCD.drawString("EV3 Wallet", 4, 3);
-
 
         new Thread(new Foo()).start();
 
@@ -65,6 +70,36 @@ public class Foo implements Runnable {
 
         MainNetParams netParams = new MainNetParams();
         Wallet wallet = get_wallet(netParams);
+        slf4jLogger.info("Got wallet.");
+
+
+        List<ECKey> keys = wallet.getKeys();
+        Address address = keys.get(0).toAddress(netParams);
+
+        LCD.clear();
+
+        String uri = BitcoinURI.convertToBitcoinURI(address.toString(),
+                new BigInteger("100000"), "EV3 Wallet", "");
+
+        slf4jLogger.info("Wallet address: URI: " + uri);
+
+        int widthHeight = 150;
+
+        try {
+            final BitMatrix result = QR_WRITER.encode(uri, BarcodeFormat.QR_CODE, widthHeight, widthHeight);
+
+            for (int i = 0; i < widthHeight; i++) {
+                for (int j = 0; j < widthHeight; j++) {
+
+                    boolean pixelSet = result.get(i, j);
+                    LCD.setPixel(i + 10 , j - 18, pixelSet ? 1 : 0);
+                }
+            }
+
+        } catch (WriterException e) {
+            slf4jLogger.error("Exception while encoding QRCode: ", e);
+        }
+
         File blockStoreFile = new File("/home/root/ev3_spv_block_store");
         long offset = 0; // 86400 * 30;
         try {
@@ -117,8 +152,7 @@ public class Foo implements Runnable {
             wallet.addKey(key);
             try {
                 wallet.saveToFile(walletFile);
-            }
-            catch (IOException a) {
+            } catch (IOException a) {
                 slf4jLogger.error("Caught IOException: ", a);
             }
         }
@@ -128,6 +162,7 @@ public class Foo implements Runnable {
 
 
 class TxListener implements PeerEventListener {
+
     MainNetParams netParams = new MainNetParams();
 
     public final Logger slf4jLogger = LoggerFactory.getLogger(Foo.class);
@@ -175,6 +210,8 @@ class TxListener implements PeerEventListener {
             for (TransactionOutput output : txOutputs) {
                 Script script = new Script(output.getScriptBytes());
                 Address address = script.getToAddress(netParams);
+
+
                 // TODO: add check of TO address here to see if its to ours
                 slf4jLogger.info("Output TO address: " + address.toString() +
                                  " is " + output.getValue());
